@@ -509,11 +509,7 @@
         let currentSubTab = 'week';
         let heatmapMonth = new Date();
 
-        function vibrate(pattern = 10) {
-            if ('vibrate' in navigator) {
-                navigator.vibrate(pattern);
-            }
-        }
+        // Vibration nicht verfügbar auf iOS - Funktion entfernt
 
         // Get date key adjusted for 5am day start
         function getAdjustedDateKey(timestamp) {
@@ -570,24 +566,26 @@
         // GitHub config
         const GITHUB_REPO = 'FiniTea/iosBadTracker';
         const BACKUP_PATH = 'backups/tracker-backup.json';
+        const AUTO_BACKUP_DAYS = 7;
 
         function getGitHubToken() {
             let token = localStorage.getItem('github-token');
             if (!token) {
-                token = prompt('GitHub Personal Access Token eingeben (einmalig):');
-                if (token) {
-                    localStorage.setItem('github-token', token);
+                token = prompt('GitHub Personal Access Token eingeben (einmalig):\n\nBenötigt "repo" Berechtigung.');
+                if (token && token.trim()) {
+                    localStorage.setItem('github-token', token.trim());
+                    return token.trim();
                 }
+                return null;
             }
             return token;
         }
 
-        // Export data to GitHub
-        document.getElementById('export-btn').addEventListener('click', async () => {
+        async function backupToGitHub(silent = false) {
             const token = getGitHubToken();
             if (!token) {
-                alert('Kein Token eingegeben.');
-                return;
+                if (!silent) alert('Kein Token eingegeben.');
+                return false;
             }
 
             const exportData = {
@@ -599,10 +597,31 @@
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(exportData, null, 2))));
 
             try {
+                // First, check if token works by getting repo info
+                const repoCheck = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!repoCheck.ok) {
+                    if (repoCheck.status === 401) {
+                        localStorage.removeItem('github-token');
+                        throw new Error('Token ungültig. Bitte neu eingeben.');
+                    } else if (repoCheck.status === 404) {
+                        throw new Error('Repo nicht gefunden. Prüfe ob Token "repo" Berechtigung hat.');
+                    }
+                    throw new Error(`GitHub API Fehler: ${repoCheck.status}`);
+                }
+
                 // Get current file SHA (needed for update)
-                let sha = null;
+                let sha = undefined;
                 const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
-                    headers: { 'Authorization': `token ${token}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
                 });
 
                 if (getResponse.ok) {
@@ -611,36 +630,44 @@
                 }
 
                 // Create or update file
+                const body = {
+                    message: `Backup ${new Date().toLocaleString('de-DE')}`,
+                    content: content
+                };
+                if (sha) body.sha = sha;
+
                 const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `token ${token}`,
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        message: `Backup ${new Date().toISOString()}`,
-                        content: content,
-                        sha: sha
-                    })
+                    body: JSON.stringify(body)
                 });
 
                 if (putResponse.ok) {
                     localStorage.setItem('tracker-last-export', new Date().toISOString());
                     updateBackupInfo();
-                    vibrate([50, 30, 50]);
-                    alert('Backup erfolgreich auf GitHub gespeichert!');
+                    if (!silent) alert('Backup erfolgreich auf GitHub gespeichert!');
+                    return true;
                 } else {
                     const error = await putResponse.json();
-                    throw new Error(error.message || 'GitHub API Fehler');
+                    throw new Error(error.message || `GitHub API Fehler: ${putResponse.status}`);
                 }
             } catch (err) {
-                alert('Fehler beim GitHub-Backup: ' + err.message);
-                // Fallback: lokaler Download
-                if (confirm('Lokal speichern stattdessen?')) {
-                    downloadLocalBackup(exportData);
+                if (!silent) {
+                    alert('Fehler beim GitHub-Backup: ' + err.message);
+                    if (confirm('Lokal speichern stattdessen?')) {
+                        downloadLocalBackup(exportData);
+                    }
                 }
+                return false;
             }
-        });
+        }
+
+        // Export button
+        document.getElementById('export-btn').addEventListener('click', () => backupToGitHub(false));
 
         function downloadLocalBackup(exportData) {
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -655,6 +682,27 @@
             URL.revokeObjectURL(url);
             localStorage.setItem('tracker-last-export', new Date().toISOString());
             updateBackupInfo();
+        }
+
+        // Check for auto-backup on load
+        function checkAutoBackup() {
+            const lastExport = localStorage.getItem('tracker-last-export');
+            const token = localStorage.getItem('github-token');
+
+            if (!token || data.length === 0) return;
+
+            const daysSinceBackup = lastExport
+                ? (Date.now() - new Date(lastExport).getTime()) / (1000 * 60 * 60 * 24)
+                : Infinity;
+
+            if (daysSinceBackup >= AUTO_BACKUP_DAYS) {
+                // Auto-backup
+                backupToGitHub(true).then(success => {
+                    if (success) {
+                        console.log('Auto-Backup erfolgreich');
+                    }
+                });
+            }
         }
 
         // Import data from GitHub
@@ -737,7 +785,7 @@
             updateBackupInfo();
 
             alert(`Import erfolgreich!\n${newCount} neue Einträge hinzugefügt.\n${entries.length - newCount} Duplikate übersprungen.`);
-            vibrate([50, 30, 50]);
+            
         }
 
         function updateBackupInfo() {
@@ -770,7 +818,7 @@
                 return;
             }
 
-            vibrate(10);
+            
 
             if (!tapCounts[buttonId]) tapCounts[buttonId] = { count: 0, firstTap: now };
 
@@ -791,7 +839,7 @@
                 if (count >= 3) {
                     deleteLastEntry(buttonId);
                     flashButton(btn, 'delete');
-                    vibrate([20, 50, 20]);
+                    
                 } else if (count === 2 && buttonId !== '3') {
                     recordEntry(buttonId, 'double');
                 } else if (count >= 1) {
@@ -1398,6 +1446,9 @@
         setInterval(updateCooldowns, 1000);
         render();
         updateBackupInfo();
+
+        // Auto-backup nach 7 Tagen
+        setTimeout(checkAutoBackup, 2000);
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(() => {});
