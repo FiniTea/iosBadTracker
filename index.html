@@ -565,8 +565,30 @@
 
         // GitHub config
         const GITHUB_REPO = 'FiniTea/iosBadTracker';
-        const BACKUP_PATH = 'backups/tracker-backup.json';
         const AUTO_BACKUP_DAYS = 7;
+
+        function getUsername() {
+            let username = localStorage.getItem('tracker-username');
+            if (!username) {
+                username = prompt('Dein Name für Backups eingeben (einmalig):');
+                if (username && username.trim()) {
+                    // Sanitize: nur Buchstaben, Zahlen, Bindestrich
+                    username = username.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    if (username) {
+                        localStorage.setItem('tracker-username', username);
+                        return username;
+                    }
+                }
+                return null;
+            }
+            return username;
+        }
+
+        function getBackupPath() {
+            const username = getUsername();
+            if (!username) return null;
+            return `backups/tracker-${username}.json`;
+        }
 
         function getGitHubToken() {
             let token = localStorage.getItem('github-token');
@@ -582,14 +604,22 @@
         }
 
         async function backupToGitHub(silent = false) {
+            const backupPath = getBackupPath();
+            if (!backupPath) {
+                if (!silent) alert('Kein Benutzername eingegeben.');
+                return false;
+            }
+
             const token = getGitHubToken();
             if (!token) {
                 if (!silent) alert('Kein Token eingegeben.');
                 return false;
             }
 
+            const username = localStorage.getItem('tracker-username');
             const exportData = {
                 version: 1,
+                user: username,
                 exportedAt: new Date().toISOString(),
                 entries: data
             };
@@ -617,7 +647,7 @@
 
                 // Get current file SHA (needed for update)
                 let sha = undefined;
-                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${backupPath}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/vnd.github.v3+json'
@@ -631,12 +661,12 @@
 
                 // Create or update file
                 const body = {
-                    message: `Backup ${new Date().toLocaleString('de-DE')}`,
+                    message: `Backup ${username} - ${new Date().toLocaleString('de-DE')}`,
                     content: content
                 };
                 if (sha) body.sha = sha;
 
-                const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
+                const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${backupPath}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -711,6 +741,12 @@
 
         // Import data from GitHub
         document.getElementById('import-btn').addEventListener('click', async () => {
+            const backupPath = getBackupPath();
+            if (!backupPath) {
+                alert('Kein Benutzername eingegeben.');
+                return;
+            }
+
             const token = getGitHubToken();
             if (!token) {
                 alert('Kein Token eingegeben.');
@@ -718,13 +754,17 @@
             }
 
             try {
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BACKUP_PATH}`, {
-                    headers: { 'Authorization': `token ${token}` }
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${backupPath}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
                 });
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        alert('Kein Backup auf GitHub gefunden.');
+                        const username = localStorage.getItem('tracker-username');
+                        alert(`Kein Backup für "${username}" auf GitHub gefunden.`);
                     } else {
                         throw new Error('GitHub API Fehler');
                     }
@@ -795,10 +835,14 @@
         function updateBackupInfo() {
             const info = document.getElementById('backup-info');
             const lastExport = localStorage.getItem('tracker-last-export');
+            const username = localStorage.getItem('tracker-username');
             const hasToken = !!localStorage.getItem('github-token');
             const entryCount = data.length;
 
             let text = `${entryCount} Einträge`;
+            if (username) {
+                text += ` · User: ${username}`;
+            }
             if (lastExport) {
                 const date = new Date(lastExport);
                 const formatted = date.toLocaleDateString('de-DE', {
@@ -807,9 +851,11 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                text += ` · GitHub-Sync: ${formatted}`;
+                text += ` · Sync: ${formatted}`;
+            } else if (!username || !hasToken) {
+                text += ` · Nicht eingerichtet`;
             } else {
-                text += ` · ${hasToken ? 'Noch nicht synchronisiert' : 'GitHub nicht verbunden'}`;
+                text += ` · Noch nicht synchronisiert`;
             }
             info.textContent = text;
         }
