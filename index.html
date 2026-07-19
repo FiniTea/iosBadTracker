@@ -396,6 +396,51 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
             touch-action: manipulation;
         }
+
+        .backup-section {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .backup-btn {
+            flex: 1;
+            padding: 12px;
+            background: #fff;
+            border: none;
+            border-radius: 10px;
+            color: #1d1d1f;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            touch-action: manipulation;
+        }
+
+        .backup-btn.export {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .backup-btn.import {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .import-input {
+            display: none;
+        }
+
+        .backup-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: #86868b;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
     </style>
 </head>
 <body>
@@ -432,6 +477,13 @@
             <div class="history-title">Letzte Einträge</div>
             <div id="history-list"></div>
         </div>
+
+        <div class="backup-section">
+            <button class="backup-btn export" id="export-btn">Backup exportieren</button>
+            <button class="backup-btn import" id="import-btn">Backup importieren</button>
+            <input type="file" accept=".json" class="import-input" id="import-input">
+        </div>
+        <div class="backup-info" id="backup-info"></div>
 
         <button class="clear-btn" id="clear-btn">Alle Daten löschen</button>
     </div>
@@ -511,8 +563,110 @@
                 data = [];
                 saveData();
                 render();
+                updateBackupInfo();
             }
         });
+
+        // Export data
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const exportData = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                entries: data
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            a.href = url;
+            a.download = `tracker-backup-${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            localStorage.setItem('tracker-last-export', new Date().toISOString());
+            updateBackupInfo();
+            vibrate(50);
+        });
+
+        // Import data
+        document.getElementById('import-btn').addEventListener('click', () => {
+            document.getElementById('import-input').click();
+        });
+
+        document.getElementById('import-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    let entries = [];
+
+                    // Support both old format (array) and new format (object with entries)
+                    if (Array.isArray(imported)) {
+                        entries = imported;
+                    } else if (imported.entries && Array.isArray(imported.entries)) {
+                        entries = imported.entries;
+                    } else {
+                        throw new Error('Ungültiges Format');
+                    }
+
+                    // Merge: add only entries with timestamps not already present
+                    const existingTimestamps = new Set(data.map(d => d.timestamp));
+                    let newCount = 0;
+
+                    entries.forEach(entry => {
+                        if (entry.timestamp && entry.button && entry.color) {
+                            if (!existingTimestamps.has(entry.timestamp)) {
+                                data.push(entry);
+                                existingTimestamps.add(entry.timestamp);
+                                newCount++;
+                            }
+                        }
+                    });
+
+                    // Sort by timestamp
+                    data.sort((a, b) => a.timestamp - b.timestamp);
+
+                    saveData();
+                    render();
+                    updateBackupInfo();
+
+                    alert(`Import erfolgreich!\n${newCount} neue Einträge hinzugefügt.\n${entries.length - newCount} Duplikate übersprungen.`);
+                    vibrate([50, 30, 50]);
+                } catch (err) {
+                    alert('Fehler beim Import: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Reset input
+        });
+
+        function updateBackupInfo() {
+            const info = document.getElementById('backup-info');
+            const lastExport = localStorage.getItem('tracker-last-export');
+            const entryCount = data.length;
+
+            let text = `${entryCount} Einträge gespeichert`;
+            if (lastExport) {
+                const date = new Date(lastExport);
+                const formatted = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                text += ` · Letztes Backup: ${formatted}`;
+            } else {
+                text += ` · Noch kein Backup erstellt`;
+            }
+            info.textContent = text;
+        }
 
         function handleTap(btn) {
             const buttonId = btn.dataset.button;
@@ -1149,6 +1303,7 @@
 
         setInterval(updateCooldowns, 1000);
         render();
+        updateBackupInfo();
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(() => {});
