@@ -657,8 +657,12 @@
                 }
             } catch (err) {
                 if (!silent) {
-                    alert('Fehler beim GitHub-Backup: ' + err.message);
-                    if (confirm('Lokal speichern stattdessen?')) {
+                    const wantsLocal = confirm(
+                        'GitHub-Backup fehlgeschlagen:\n' +
+                        err.message +
+                        '\n\n→ Lokal speichern stattdessen?'
+                    );
+                    if (wantsLocal) {
                         downloadLocalBackup(exportData);
                     }
                 }
