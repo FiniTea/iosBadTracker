@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f5f5f7">
@@ -15,6 +15,7 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         body {
@@ -25,6 +26,7 @@
             padding: 20px;
             padding-top: max(20px, env(safe-area-inset-top));
             padding-bottom: max(20px, env(safe-area-inset-bottom));
+            touch-action: manipulation;
         }
 
         .container {
@@ -58,6 +60,7 @@
             transition: transform 0.1s, background 0.3s, box-shadow 0.2s;
             position: relative;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            touch-action: manipulation;
         }
 
         .btn:active {
@@ -109,6 +112,7 @@
             font-weight: 500;
             cursor: pointer;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            touch-action: manipulation;
         }
 
         .main-tab.active {
@@ -121,10 +125,11 @@
             gap: 6px;
             margin-bottom: 15px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .sub-tab {
-            padding: 6px 14px;
+            padding: 6px 12px;
             background: #e5e5ea;
             border: none;
             border-radius: 8px;
@@ -132,6 +137,7 @@
             font-size: 0.75rem;
             font-weight: 500;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         .sub-tab.active {
@@ -165,32 +171,13 @@
 
         .pie-wrapper {
             position: relative;
-            width: 180px;
-            height: 180px;
+            width: 200px;
+            height: 200px;
         }
 
         .pie-svg {
             width: 100%;
             height: 100%;
-            transform: rotate(-90deg);
-        }
-
-        .pie-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-
-        .pie-percent {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .pie-label {
-            font-size: 0.75rem;
-            color: #86868b;
         }
 
         .pie-legend {
@@ -214,13 +201,31 @@
         }
 
         /* Bar Chart */
+        .bar-chart-wrapper {
+            display: flex;
+            gap: 5px;
+        }
+
+        .y-axis {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 150px;
+            padding-right: 8px;
+            font-size: 0.65rem;
+            color: #86868b;
+        }
+
         .bar-chart {
             display: flex;
             align-items: flex-end;
             justify-content: space-around;
-            height: 180px;
-            padding: 0 10px;
-            gap: 8px;
+            height: 150px;
+            flex: 1;
+            gap: 4px;
+            border-left: 1px solid #e5e5ea;
+            padding-left: 8px;
         }
 
         .bar-group {
@@ -228,25 +233,25 @@
             flex-direction: column;
             align-items: center;
             flex: 1;
-            max-width: 50px;
+            max-width: 45px;
         }
 
         .bar-pair {
             display: flex;
-            gap: 3px;
+            gap: 2px;
             align-items: flex-end;
             height: 150px;
         }
 
         .bar {
-            width: 14px;
-            border-radius: 4px 4px 0 0;
+            width: 12px;
+            border-radius: 3px 3px 0 0;
             transition: height 0.3s;
             min-height: 2px;
         }
 
         .bar-label {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #86868b;
             margin-top: 6px;
             text-align: center;
@@ -256,7 +261,7 @@
         .heatmap-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
         .heatmap-nav {
@@ -272,6 +277,7 @@
             padding: 8px 14px;
             font-size: 0.8rem;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         .heatmap-month {
@@ -301,29 +307,11 @@
             font-weight: 500;
         }
 
-        .heatmap-day.empty {
-            background: transparent;
-        }
-
-        .heatmap-day.zero {
-            background: #fecaca;
-            color: #991b1b;
-        }
-
-        .heatmap-day.one {
-            background: #bbf7d0;
-            color: #166534;
-        }
-
-        .heatmap-day.two {
-            background: #22c55e;
-            color: #fff;
-        }
-
-        .heatmap-day.future {
-            background: #f3f4f6;
-            color: #9ca3af;
-        }
+        .heatmap-day.empty { background: transparent; }
+        .heatmap-day.zero { background: #fecaca; color: #991b1b; }
+        .heatmap-day.one { background: #bbf7d0; color: #166534; }
+        .heatmap-day.two { background: #22c55e; color: #fff; }
+        .heatmap-day.future { background: #f3f4f6; color: #9ca3af; }
 
         .heatmap-legend {
             display: flex;
@@ -368,9 +356,7 @@
             gap: 10px;
         }
 
-        .history-item:last-child {
-            border-bottom: none;
-        }
+        .history-item:last-child { border-bottom: none; }
 
         .history-dot {
             width: 10px;
@@ -408,6 +394,7 @@
             font-size: 0.8rem;
             cursor: pointer;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            touch-action: manipulation;
         }
     </style>
 </head>
@@ -450,24 +437,16 @@
     </div>
 
     <script>
-        const COOLDOWN_MS = 5 * 1000; // 5 Sekunden
+        const COOLDOWN_MS = 5 * 1000;
         const DOUBLE_TAP_MS = 300;
         const TRIPLE_TAP_MS = 500;
-        const DAY_START_HOUR = 5; // Tag beginnt um 5:00
+        const DAY_START_HOUR = 5;
 
         const COLORS = {
             green: '#22c55e',
             red: '#ef4444',
             yellow: '#eab308',
             brown: '#92400e'
-        };
-
-        const LABELS = {
-            green: 'Frei',
-            red: 'Besetzt',
-            yellow: 'Vorne',
-            brown: 'Hinten',
-            zapupa: 'Zapupa'
         };
 
         let data = JSON.parse(localStorage.getItem('tracker-data') || '[]');
@@ -478,22 +457,35 @@
         let currentSubTab = 'week';
         let heatmapMonth = new Date();
 
-        // Vibration
         function vibrate(pattern = 10) {
             if ('vibrate' in navigator) {
                 navigator.vibrate(pattern);
             }
         }
 
-        // Adjust date for 5am day start
+        // Get date key adjusted for 5am day start
+        function getAdjustedDateKey(timestamp) {
+            const d = new Date(timestamp);
+            // Subtract 5 hours - if it's before 5am, it belongs to previous day
+            d.setHours(d.getHours() - DAY_START_HOUR);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Get simple date key (no adjustment)
+        function getSimpleDateKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function getAdjustedDate(timestamp) {
             const d = new Date(timestamp);
             d.setHours(d.getHours() - DAY_START_HOUR);
             return d;
-        }
-
-        function getAdjustedDateKey(timestamp) {
-            return getAdjustedDate(timestamp).toISOString().split('T')[0];
         }
 
         // Button events
@@ -507,7 +499,8 @@
                 document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 currentTab = tab.dataset.tab;
-                currentSubTab = currentTab === 'vornehinten' ? 'days' : 'week';
+                currentSubTab = currentTab === 'vornehinten' ? 'days' :
+                               currentTab === 'zapupa' ? 'heatmap' : 'week';
                 renderChart();
             });
         });
@@ -525,14 +518,12 @@
             const buttonId = btn.dataset.button;
             const now = Date.now();
 
-            // Cooldown check
             if (lastTaps[buttonId] && (now - lastTaps[buttonId]) < COOLDOWN_MS) {
                 return;
             }
 
             vibrate(10);
 
-            // Count taps
             if (!tapCounts[buttonId]) tapCounts[buttonId] = { count: 0, firstTap: now };
 
             if (now - tapCounts[buttonId].firstTap > TRIPLE_TAP_MS) {
@@ -541,26 +532,21 @@
                 tapCounts[buttonId].count++;
             }
 
-            // Clear existing timer
             if (tapTimers[buttonId]) {
                 clearTimeout(tapTimers[buttonId]);
             }
 
-            // Wait for more taps
             tapTimers[buttonId] = setTimeout(() => {
                 const count = tapCounts[buttonId].count;
                 tapCounts[buttonId] = { count: 0, firstTap: 0 };
 
                 if (count >= 3) {
-                    // Triple tap = delete last entry for this button
                     deleteLastEntry(buttonId);
                     flashButton(btn, 'delete');
                     vibrate([20, 50, 20]);
                 } else if (count === 2 && buttonId !== '3') {
-                    // Double tap
                     recordEntry(buttonId, 'double');
                 } else if (count >= 1) {
-                    // Single tap
                     recordEntry(buttonId, 'single');
                 }
             }, DOUBLE_TAP_MS);
@@ -592,12 +578,7 @@
                 color = 'green';
             }
 
-            data.push({
-                timestamp: now,
-                button: buttonId,
-                color: color
-            });
-
+            data.push({ timestamp: now, button: buttonId, color: color });
             lastTaps[buttonId] = now;
             saveData();
 
@@ -667,34 +648,41 @@
                 </div>
                 <div class="chart-container">
                     <div class="chart-title">Frei / Besetzt</div>
-                    ${renderPieChart(green, red, total)}
+                    ${renderTwoColorPie(green, red, 'Frei', 'Besetzt', COLORS.green, COLORS.red)}
                 </div>
             `;
         }
 
-        function renderPieChart(green, red, total) {
+        function renderTwoColorPie(val1, val2, label1, label2, color1, color2) {
+            const total = val1 + val2;
             if (total === 0) {
                 return '<div class="no-data">Keine Daten</div>';
             }
 
-            const greenPct = Math.round((green / total) * 100);
-            const redPct = 100 - greenPct;
-            const greenAngle = (green / total) * 360;
+            const pct1 = Math.round((val1 / total) * 100);
+            const pct2 = 100 - pct1;
+            const angle1 = (val1 / total) * 360;
 
-            // SVG pie
-            const r = 70;
-            const cx = 90;
-            const cy = 90;
+            const r = 80;
+            const cx = 100;
+            const cy = 100;
+            const labelR = 50; // Radius for label placement
 
             function polarToCartesian(angle) {
                 const rad = (angle - 90) * Math.PI / 180;
-                return {
-                    x: cx + r * Math.cos(rad),
-                    y: cy + r * Math.sin(rad)
-                };
+                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+            }
+
+            function labelPos(startAngle, endAngle) {
+                const midAngle = (startAngle + endAngle) / 2;
+                const rad = (midAngle - 90) * Math.PI / 180;
+                return { x: cx + labelR * Math.cos(rad), y: cy + labelR * Math.sin(rad) };
             }
 
             function describeArc(startAngle, endAngle) {
+                if (endAngle - startAngle >= 360) {
+                    return `M ${cx} ${cy-r} A ${r} ${r} 0 1 1 ${cx-0.01} ${cy-r} A ${r} ${r} 0 1 1 ${cx} ${cy-r} Z`;
+                }
                 const start = polarToCartesian(endAngle);
                 const end = polarToCartesian(startAngle);
                 const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
@@ -702,34 +690,43 @@
             }
 
             let paths = '';
-            if (green > 0 && red > 0) {
+            let labels = '';
+
+            if (val1 > 0 && val2 > 0) {
                 paths = `
-                    <path d="${describeArc(0, greenAngle)}" fill="${COLORS.green}"/>
-                    <path d="${describeArc(greenAngle, 360)}" fill="${COLORS.red}"/>
+                    <path d="${describeArc(0, angle1)}" fill="${color1}"/>
+                    <path d="${describeArc(angle1, 360)}" fill="${color2}"/>
                 `;
-            } else if (green > 0) {
-                paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS.green}"/>`;
+                const pos1 = labelPos(0, angle1);
+                const pos2 = labelPos(angle1, 360);
+                labels = `
+                    <text x="${pos1.x}" y="${pos1.y}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="14" font-weight="bold">${pct1}%</text>
+                    <text x="${pos2.x}" y="${pos2.y}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="14" font-weight="bold">${pct2}%</text>
+                `;
+            } else if (val1 > 0) {
+                paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color1}"/>`;
+                labels = `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="16" font-weight="bold">100%</text>`;
             } else {
-                paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS.red}"/>`;
+                paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color2}"/>`;
+                labels = `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="16" font-weight="bold">100%</text>`;
             }
 
             return `
                 <div class="pie-container">
                     <div class="pie-wrapper">
-                        <svg class="pie-svg" viewBox="0 0 180 180">${paths}</svg>
-                        <div class="pie-center">
-                            <div class="pie-percent">${greenPct}%</div>
-                            <div class="pie-label">Frei</div>
-                        </div>
+                        <svg class="pie-svg" viewBox="0 0 200 200">
+                            ${paths}
+                            ${labels}
+                        </svg>
                     </div>
                     <div class="pie-legend">
                         <div class="legend-item">
-                            <span class="legend-dot" style="background:${COLORS.green}"></span>
-                            Frei: ${green}
+                            <span class="legend-dot" style="background:${color1}"></span>
+                            ${label1}: ${val1} (${pct1}%)
                         </div>
                         <div class="legend-item">
-                            <span class="legend-dot" style="background:${COLORS.red}"></span>
-                            Besetzt: ${red}
+                            <span class="legend-dot" style="background:${color2}"></span>
+                            ${label2}: ${val2} (${pct2}%)
                         </div>
                     </div>
                 </div>
@@ -737,70 +734,76 @@
         }
 
         function renderBarChartSection() {
+            const filtered = data.filter(d => d.button === '2');
+            const yellowCount = filtered.filter(d => d.color === 'yellow').length;
+            const brownCount = filtered.filter(d => d.color === 'brown').length;
+
             return `
                 <div class="sub-tabs">
                     <button class="sub-tab ${currentSubTab === 'days' ? 'active' : ''}" data-sub="days">Tage</button>
                     <button class="sub-tab ${currentSubTab === 'weeks' ? 'active' : ''}" data-sub="weeks">Wochen</button>
+                    <button class="sub-tab ${currentSubTab === 'months' ? 'active' : ''}" data-sub="months">Monate</button>
                 </div>
                 <div class="chart-container">
                     <div class="chart-title">Vorne / Hinten</div>
-                    ${renderBarChart()}
+                    ${renderBarChart(filtered, yellowCount, brownCount)}
                 </div>
             `;
         }
 
-        function renderBarChart() {
-            const filtered = data.filter(d => d.button === '2');
-
+        function renderBarChart(filtered, totalYellow, totalBrown) {
             if (filtered.length === 0) {
                 return '<div class="no-data">Keine Daten</div>';
             }
 
-            if (currentSubTab === 'days') {
-                // Group by weekday
-                const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                const dayData = Array(7).fill(null).map(() => ({ yellow: 0, brown: 0 }));
+            let values, labels;
 
+            if (currentSubTab === 'days') {
+                const dayData = Array(7).fill(null).map(() => ({ yellow: 0, brown: 0 }));
                 filtered.forEach(entry => {
                     const d = getAdjustedDate(entry.timestamp);
                     const day = d.getDay();
                     dayData[day][entry.color]++;
                 });
-
-                // Reorder to start with Monday
-                const reordered = [...dayData.slice(1), dayData[0]];
-                const labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-                return renderBarChartHTML(reordered, labels);
-            } else {
-                // Group by week
+                values = [...dayData.slice(1), dayData[0]];
+                labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+            } else if (currentSubTab === 'weeks') {
                 const weekData = {};
                 filtered.forEach(entry => {
                     const d = getAdjustedDate(entry.timestamp);
                     const week = getWeekNumber(d);
-                    const key = `${d.getFullYear()}-${week}`;
+                    const key = `${d.getFullYear()}-${String(week).padStart(2, '0')}`;
                     if (!weekData[key]) weekData[key] = { yellow: 0, brown: 0, week };
                     weekData[key][entry.color]++;
                 });
-
-                const weeks = Object.entries(weekData)
-                    .sort((a, b) => a[0].localeCompare(b[0]))
-                    .slice(-8);
-
-                const values = weeks.map(w => w[1]);
-                const labels = weeks.map(w => `KW${w[1].week}`);
-
-                return renderBarChartHTML(values, labels);
+                const weeks = Object.entries(weekData).sort((a, b) => a[0].localeCompare(b[0])).slice(-8);
+                values = weeks.map(w => w[1]);
+                labels = weeks.map(w => `KW${w[1].week}`);
+            } else {
+                const monthData = {};
+                filtered.forEach(entry => {
+                    const d = getAdjustedDate(entry.timestamp);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const monthName = d.toLocaleDateString('de-DE', { month: 'short' });
+                    if (!monthData[key]) monthData[key] = { yellow: 0, brown: 0, name: monthName };
+                    monthData[key][entry.color]++;
+                });
+                const months = Object.entries(monthData).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+                values = months.map(m => m[1]);
+                labels = months.map(m => m[1].name);
             }
-        }
 
-        function renderBarChartHTML(values, labels) {
+            if (values.length === 0) {
+                return '<div class="no-data">Keine Daten</div>';
+            }
+
             const max = Math.max(...values.map(v => Math.max(v.yellow, v.brown)), 1);
+            const yAxisLabels = [max, Math.round(max/2), 0];
 
             let bars = '';
             values.forEach((v, i) => {
-                const yH = (v.yellow / max) * 130;
-                const bH = (v.brown / max) * 130;
+                const yH = (v.yellow / max) * 140;
+                const bH = (v.brown / max) * 140;
                 bars += `
                     <div class="bar-group">
                         <div class="bar-pair">
@@ -813,15 +816,22 @@
             });
 
             return `
-                <div class="bar-chart">${bars}</div>
+                <div class="bar-chart-wrapper">
+                    <div class="y-axis">
+                        <span>${yAxisLabels[0]}</span>
+                        <span>${yAxisLabels[1]}</span>
+                        <span>${yAxisLabels[2]}</span>
+                    </div>
+                    <div class="bar-chart">${bars}</div>
+                </div>
                 <div class="pie-legend" style="margin-top:15px">
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.yellow}"></span>
-                        Vorne
+                        Vorne: ${totalYellow}
                     </div>
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.brown}"></span>
-                        Hinten
+                        Hinten: ${totalBrown}
                     </div>
                 </div>
             `;
@@ -830,11 +840,11 @@
         function renderZapupaSection() {
             return `
                 <div class="sub-tabs">
-                    <button class="sub-tab ${currentSubTab === 'heatmap' || currentSubTab === 'week' ? 'active' : ''}" data-sub="heatmap">Heatmap</button>
-                    <button class="sub-tab ${currentSubTab === 'pie' ? 'active' : ''}" data-sub="pie">Statistik</button>
+                    <button class="sub-tab ${currentSubTab === 'heatmap' ? 'active' : ''}" data-sub="heatmap">Heatmap</button>
+                    <button class="sub-tab ${currentSubTab === 'pie' || currentSubTab === 'pie-week' || currentSubTab === 'pie-month' || currentSubTab === 'pie-all' ? 'active' : ''}" data-sub="pie">Statistik</button>
                 </div>
                 <div class="chart-container">
-                    ${currentSubTab === 'pie' ? renderZapupaPie() : renderHeatmap()}
+                    ${currentSubTab.startsWith('pie') ? renderZapupaPie() : renderHeatmap()}
                 </div>
             `;
         }
@@ -847,8 +857,9 @@
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             const today = new Date();
+            today.setHours(23, 59, 59, 999);
 
-            // Count entries per day
+            // Count entries per day using adjusted keys
             const zapupaData = data.filter(d => d.button === '3');
             const dayCounts = {};
             zapupaData.forEach(entry => {
@@ -856,21 +867,18 @@
                 dayCounts[key] = (dayCounts[key] || 0) + 1;
             });
 
-            // Build calendar grid
             const headers = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
             let grid = headers.map(h => `<div class="heatmap-header">${h}</div>`).join('');
 
-            // Empty cells before first day (Monday = 0)
             let startDay = firstDay.getDay() - 1;
             if (startDay < 0) startDay = 6;
             for (let i = 0; i < startDay; i++) {
                 grid += '<div class="heatmap-day empty"></div>';
             }
 
-            // Days of month
             for (let d = 1; d <= lastDay.getDate(); d++) {
                 const date = new Date(year, month, d);
-                const key = date.toISOString().split('T')[0];
+                const key = getSimpleDateKey(date);
                 const count = dayCounts[key] || 0;
 
                 let cls = 'zero';
@@ -911,26 +919,26 @@
         function renderZapupaPie() {
             const zapupaData = data.filter(d => d.button === '3');
 
-            // Count per day
             const dayCounts = {};
             zapupaData.forEach(entry => {
                 const key = getAdjustedDateKey(entry.timestamp);
                 dayCounts[key] = (dayCounts[key] || 0) + 1;
             });
 
-            // Get days in range
             const now = new Date();
             let startDate;
-            if (currentSubTab === 'pie-week' || currentSubTab === 'pie') {
+            const subTab = currentSubTab;
+
+            if (subTab === 'pie' || subTab === 'pie-week') {
                 startDate = new Date(now);
                 startDate.setDate(startDate.getDate() - 7);
-            } else if (currentSubTab === 'pie-month') {
+            } else if (subTab === 'pie-month') {
                 startDate = new Date(now);
                 startDate.setDate(startDate.getDate() - 30);
             } else {
-                // All time - find first entry
                 if (zapupaData.length > 0) {
-                    startDate = getAdjustedDate(zapupaData[0].timestamp);
+                    startDate = new Date(Math.min(...zapupaData.map(e => e.timestamp)));
+                    startDate.setHours(startDate.getHours() - DAY_START_HOUR);
                 } else {
                     startDate = new Date(now);
                     startDate.setDate(startDate.getDate() - 7);
@@ -939,8 +947,12 @@
 
             let zero = 0, one = 0, two = 0;
             const d = new Date(startDate);
-            while (d <= now) {
-                const key = d.toISOString().split('T')[0];
+            d.setHours(0, 0, 0, 0);
+            const nowEnd = new Date(now);
+            nowEnd.setHours(23, 59, 59, 999);
+
+            while (d <= nowEnd) {
+                const key = getSimpleDateKey(d);
                 const count = dayCounts[key] || 0;
                 if (count === 0) zero++;
                 else if (count === 1) one++;
@@ -953,39 +965,44 @@
                 return '<div class="no-data">Keine Daten</div>';
             }
 
-            // Simple text stats
             return `
                 <div class="chart-title">Zapupa Statistik</div>
                 <div class="sub-tabs" style="margin-bottom:15px">
-                    <button class="sub-tab ${currentSubTab === 'pie' || currentSubTab === 'pie-week' ? 'active' : ''}" data-sub="pie-week">Woche</button>
-                    <button class="sub-tab ${currentSubTab === 'pie-month' ? 'active' : ''}" data-sub="pie-month">Monat</button>
-                    <button class="sub-tab ${currentSubTab === 'pie-all' ? 'active' : ''}" data-sub="pie-all">Gesamt</button>
+                    <button class="sub-tab ${subTab === 'pie' || subTab === 'pie-week' ? 'active' : ''}" data-sub="pie-week">Woche</button>
+                    <button class="sub-tab ${subTab === 'pie-month' ? 'active' : ''}" data-sub="pie-month">Monat</button>
+                    <button class="sub-tab ${subTab === 'pie-all' ? 'active' : ''}" data-sub="pie-all">Gesamt</button>
                 </div>
-                ${renderZapupaPieChart(zero, one, two, total)}
+                ${renderThreeColorPie(zero, one, two, total)}
             `;
         }
 
-        function renderZapupaPieChart(zero, one, two, total) {
+        function renderThreeColorPie(zero, one, two, total) {
             const zeroPct = Math.round((zero / total) * 100);
             const onePct = Math.round((one / total) * 100);
-            const twoPct = 100 - zeroPct - onePct;
+            const twoPct = Math.max(0, 100 - zeroPct - onePct);
 
-            // Calculate angles
             const zeroAngle = (zero / total) * 360;
             const oneAngle = (one / total) * 360;
             const twoAngle = (two / total) * 360;
 
-            const r = 70;
-            const cx = 90;
-            const cy = 90;
+            const r = 80;
+            const cx = 100;
+            const cy = 100;
+            const labelR = 50;
 
             function polarToCartesian(angle) {
                 const rad = (angle - 90) * Math.PI / 180;
                 return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
             }
 
+            function labelPos(startAngle, endAngle) {
+                const midAngle = (startAngle + endAngle) / 2;
+                const rad = (midAngle - 90) * Math.PI / 180;
+                return { x: cx + labelR * Math.cos(rad), y: cy + labelR * Math.sin(rad) };
+            }
+
             function describeArc(startAngle, endAngle) {
-                if (endAngle - startAngle >= 360) {
+                if (endAngle - startAngle >= 359.9) {
                     return `M ${cx} ${cy-r} A ${r} ${r} 0 1 1 ${cx-0.01} ${cy-r} A ${r} ${r} 0 1 1 ${cx} ${cy-r} Z`;
                 }
                 const start = polarToCartesian(endAngle);
@@ -994,28 +1011,41 @@
                 return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
             }
 
+            const colors = ['#fecaca', '#bbf7d0', '#22c55e'];
+            const textColors = ['#991b1b', '#166534', '#fff'];
+            const segments = [
+                { val: zero, pct: zeroPct, angle: zeroAngle, color: colors[0], textColor: textColors[0] },
+                { val: one, pct: onePct, angle: oneAngle, color: colors[1], textColor: textColors[1] },
+                { val: two, pct: twoPct, angle: twoAngle, color: colors[2], textColor: textColors[2] }
+            ].filter(s => s.val > 0);
+
             let paths = '';
-            let angle = 0;
-            if (zero > 0) {
-                paths += `<path d="${describeArc(angle, angle + zeroAngle)}" fill="#fecaca"/>`;
-                angle += zeroAngle;
-            }
-            if (one > 0) {
-                paths += `<path d="${describeArc(angle, angle + oneAngle)}" fill="#bbf7d0"/>`;
-                angle += oneAngle;
-            }
-            if (two > 0) {
-                paths += `<path d="${describeArc(angle, angle + twoAngle)}" fill="#22c55e"/>`;
+            let labels = '';
+            let currentAngle = 0;
+
+            if (segments.length === 1) {
+                paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${segments[0].color}"/>`;
+                labels = `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="${segments[0].textColor}" font-size="16" font-weight="bold">100%</text>`;
+            } else {
+                segments.forEach(seg => {
+                    const endAngle = currentAngle + seg.angle;
+                    paths += `<path d="${describeArc(currentAngle, endAngle)}" fill="${seg.color}"/>`;
+
+                    if (seg.angle > 20) {
+                        const pos = labelPos(currentAngle, endAngle);
+                        labels += `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" fill="${seg.textColor}" font-size="12" font-weight="bold">${seg.pct}%</text>`;
+                    }
+                    currentAngle = endAngle;
+                });
             }
 
             return `
                 <div class="pie-container">
                     <div class="pie-wrapper">
-                        <svg class="pie-svg" viewBox="0 0 180 180">${paths}</svg>
-                        <div class="pie-center">
-                            <div class="pie-percent">${total}</div>
-                            <div class="pie-label">Tage</div>
-                        </div>
+                        <svg class="pie-svg" viewBox="0 0 200 200">
+                            ${paths}
+                            ${labels}
+                        </svg>
                     </div>
                     <div class="pie-legend">
                         <div class="legend-item">
