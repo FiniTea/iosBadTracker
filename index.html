@@ -93,6 +93,7 @@
         .btn.flash-red { background: #ef4444; color: #fff; }
         .btn.flash-yellow { background: #eab308; color: #fff; }
         .btn.flash-brown { background: #92400e; color: #fff; }
+        .btn.flash-blue { background: #3b82f6; color: #fff; }
         .btn.flash-delete { background: #94a3b8; color: #fff; }
 
         .main-tabs {
@@ -312,6 +313,8 @@
         .heatmap-day.one { background: #bbf7d0; color: #166534; }
         .heatmap-day.two { background: #22c55e; color: #fff; }
         .heatmap-day.future { background: #f3f4f6; color: #9ca3af; }
+        .heatmap-day.white { background: #fff; border: 1px solid #e5e5ea; color: #1d1d1f; }
+        .heatmap-day.blue { background: #3b82f6; color: #fff; }
 
         .heatmap-legend {
             display: flex;
@@ -463,12 +466,18 @@
                 <div class="hint">1x = Eintrag | 3x = Löschen</div>
                 <span class="cooldown"></span>
             </button>
+            <button class="btn" id="btn4" data-button="4">
+                Dusche
+                <div class="hint">1x = Eintrag | 3x = Löschen</div>
+                <span class="cooldown"></span>
+            </button>
         </div>
 
         <div class="main-tabs">
             <button class="main-tab active" data-tab="freibesetzt">Frei/Besetzt</button>
             <button class="main-tab" data-tab="vornehinten">Vorne/Hinten</button>
             <button class="main-tab" data-tab="zapupa">Zapupa</button>
+            <button class="main-tab" data-tab="dusche">Dusche</button>
         </div>
 
         <div id="chart-area"></div>
@@ -498,7 +507,8 @@
             green: '#22c55e',
             red: '#ef4444',
             yellow: '#eab308',
-            brown: '#92400e'
+            brown: '#92400e',
+            blue: '#3b82f6'
         };
 
         let data = JSON.parse(localStorage.getItem('tracker-data') || '[]');
@@ -548,7 +558,7 @@
                 tab.classList.add('active');
                 currentTab = tab.dataset.tab;
                 currentSubTab = currentTab === 'vornehinten' ? 'days' :
-                               currentTab === 'zapupa' ? 'heatmap' : 'week';
+                               (currentTab === 'zapupa' || currentTab === 'dusche') ? 'heatmap' : 'week';
                 renderChart();
             });
         });
@@ -889,8 +899,8 @@
                 if (count >= 3) {
                     deleteLastEntry(buttonId);
                     flashButton(btn, 'delete');
-                    
-                } else if (count === 2 && buttonId !== '3') {
+
+                } else if (count === 2 && buttonId !== '3' && buttonId !== '4') {
                     recordEntry(buttonId, 'double');
                 } else if (count >= 1) {
                     recordEntry(buttonId, 'single');
@@ -920,6 +930,8 @@
                 color = tapType === 'single' ? 'green' : 'red';
             } else if (buttonId === '2') {
                 color = tapType === 'single' ? 'yellow' : 'brown';
+            } else if (buttonId === '4') {
+                color = 'blue';
             } else {
                 color = 'green';
             }
@@ -933,6 +945,20 @@
 
             render();
             updateCooldowns();
+
+            // Auto-jump zur entsprechenden Statistik
+            const tabMap = { '1': 'freibesetzt', '2': 'vornehinten', '3': 'zapupa', '4': 'dusche' };
+            const targetTab = tabMap[buttonId];
+            if (targetTab && currentTab !== targetTab) {
+                document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+                const tabBtn = document.querySelector(`.main-tab[data-tab="${targetTab}"]`);
+                if (tabBtn) tabBtn.classList.add('active');
+                currentTab = targetTab;
+                currentSubTab = (currentTab === 'vornehinten') ? 'days' :
+                               (currentTab === 'zapupa' || currentTab === 'dusche') ? 'heatmap' : 'week';
+                renderChart();
+            }
+            document.getElementById('chart-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function flashButton(btn, color) {
@@ -956,6 +982,8 @@
                 area.innerHTML = renderPieChartSection();
             } else if (currentTab === 'vornehinten') {
                 area.innerHTML = renderBarChartSection();
+            } else if (currentTab === 'dusche') {
+                area.innerHTML = renderDuscheSection();
             } else {
                 area.innerHTML = renderZapupaSection();
             }
@@ -1089,12 +1117,122 @@
                     <button class="sub-tab ${currentSubTab === 'days' ? 'active' : ''}" data-sub="days">Tage</button>
                     <button class="sub-tab ${currentSubTab === 'weeks' ? 'active' : ''}" data-sub="weeks">Wochen</button>
                     <button class="sub-tab ${currentSubTab === 'months' ? 'active' : ''}" data-sub="months">Monate</button>
+                    <button class="sub-tab ${currentSubTab === 'summary-week' || currentSubTab === 'summary-month' ? 'active' : ''}" data-sub="summary-week">Übersicht</button>
                 </div>
                 <div class="chart-container">
                     <div class="chart-title">Vorne / Hinten</div>
-                    ${renderBarChart(filtered, yellowCount, brownCount)}
+                    ${currentSubTab.startsWith('summary') ? renderVorneHintenSummary(filtered) : renderBarChart(filtered, yellowCount, brownCount)}
                 </div>
             `;
+        }
+
+        function renderVorneHintenSummary(filtered) {
+            const now = new Date();
+            const subTab = currentSubTab;
+
+            let html = `
+                <div class="sub-tabs" style="margin-bottom:15px">
+                    <button class="sub-tab ${subTab === 'summary-week' ? 'active' : ''}" data-sub="summary-week">Diese Woche</button>
+                    <button class="sub-tab ${subTab === 'summary-month' ? 'active' : ''}" data-sub="summary-month">Dieser Monat</button>
+                </div>
+            `;
+
+            if (subTab === 'summary-week') {
+                // Get start of current week (Monday)
+                const startOfWeek = new Date(now);
+                const dayOfWeek = startOfWeek.getDay();
+                const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                startOfWeek.setDate(startOfWeek.getDate() - diff);
+                startOfWeek.setHours(0, 0, 0, 0);
+
+                const weekEntries = filtered.filter(e => {
+                    const d = getAdjustedDate(e.timestamp);
+                    return d >= startOfWeek && d <= now;
+                });
+
+                const vorne = weekEntries.filter(e => e.color === 'yellow').length;
+                const hinten = weekEntries.filter(e => e.color === 'brown').length;
+
+                html += `
+                    <div style="display:flex;gap:20px;justify-content:center;margin:20px 0">
+                        <div style="text-align:center;padding:20px;background:#fef3c7;border-radius:12px;min-width:100px">
+                            <div style="font-size:2rem;font-weight:bold;color:#92400e">${vorne}</div>
+                            <div style="font-size:0.85rem;color:#78350f">Vorne</div>
+                        </div>
+                        <div style="text-align:center;padding:20px;background:#fde68a;border-radius:12px;min-width:100px">
+                            <div style="font-size:2rem;font-weight:bold;color:#78350f">${hinten}</div>
+                            <div style="font-size:0.85rem;color:#78350f">Hinten</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;color:#86868b;font-size:0.8rem">
+                        Diese Woche (seit Montag)
+                    </div>
+                `;
+            } else {
+                // Monthly view - show per week breakdown
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                startOfMonth.setHours(0, 0, 0, 0);
+
+                // Group by week
+                const weeklyData = {};
+                filtered.forEach(e => {
+                    const d = getAdjustedDate(e.timestamp);
+                    if (d >= startOfMonth && d <= now) {
+                        const weekNum = getWeekNumber(d);
+                        const key = `KW${weekNum}`;
+                        if (!weeklyData[key]) weeklyData[key] = { vorne: 0, hinten: 0, weekNum };
+                        if (e.color === 'yellow') weeklyData[key].vorne++;
+                        else if (e.color === 'brown') weeklyData[key].hinten++;
+                    }
+                });
+
+                const weeks = Object.entries(weeklyData)
+                    .sort((a, b) => a[1].weekNum - b[1].weekNum);
+
+                const monthEntries = filtered.filter(e => {
+                    const d = getAdjustedDate(e.timestamp);
+                    return d >= startOfMonth && d <= now;
+                });
+                const totalVorne = monthEntries.filter(e => e.color === 'yellow').length;
+                const totalHinten = monthEntries.filter(e => e.color === 'brown').length;
+
+                html += `
+                    <div style="display:flex;gap:20px;justify-content:center;margin:15px 0">
+                        <div style="text-align:center;padding:15px;background:#fef3c7;border-radius:12px;min-width:80px">
+                            <div style="font-size:1.5rem;font-weight:bold;color:#92400e">${totalVorne}</div>
+                            <div style="font-size:0.75rem;color:#78350f">Vorne gesamt</div>
+                        </div>
+                        <div style="text-align:center;padding:15px;background:#fde68a;border-radius:12px;min-width:80px">
+                            <div style="font-size:1.5rem;font-weight:bold;color:#78350f">${totalHinten}</div>
+                            <div style="font-size:0.75rem;color:#78350f">Hinten gesamt</div>
+                        </div>
+                    </div>
+                `;
+
+                if (weeks.length > 0) {
+                    html += `<div style="margin-top:15px;font-size:0.85rem">`;
+                    weeks.forEach(([key, val]) => {
+                        html += `
+                            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0">
+                                <span style="font-weight:500">${key}</span>
+                                <span>
+                                    <span style="color:${COLORS.yellow};font-weight:600">${val.vorne}x</span> Vorne,
+                                    <span style="color:${COLORS.brown};font-weight:600">${val.hinten}x</span> Hinten
+                                </span>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+
+                html += `
+                    <div style="text-align:center;color:#86868b;font-size:0.8rem;margin-top:10px">
+                        ${now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+                    </div>
+                `;
+            }
+
+            return html;
         }
 
         function renderBarChart(filtered, totalYellow, totalBrown) {
@@ -1411,6 +1549,172 @@
             `;
         }
 
+        function renderDuscheSection() {
+            return `
+                <div class="sub-tabs">
+                    <button class="sub-tab ${currentSubTab === 'heatmap' ? 'active' : ''}" data-sub="heatmap">Heatmap</button>
+                    <button class="sub-tab ${currentSubTab === 'stats' || currentSubTab === 'stats-week' || currentSubTab === 'stats-month' ? 'active' : ''}" data-sub="stats">Statistik</button>
+                </div>
+                <div class="chart-container">
+                    ${currentSubTab.startsWith('stats') ? renderDuscheStats() : renderDuscheHeatmap()}
+                </div>
+            `;
+        }
+
+        function renderDuscheHeatmap() {
+            const year = heatmapMonth.getFullYear();
+            const month = heatmapMonth.getMonth();
+            const monthName = heatmapMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            // Count entries per day using adjusted keys
+            const duscheData = data.filter(d => d.button === '4');
+            const dayCounts = {};
+            duscheData.forEach(entry => {
+                const key = getAdjustedDateKey(entry.timestamp);
+                dayCounts[key] = (dayCounts[key] || 0) + 1;
+            });
+
+            const headers = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+            let grid = headers.map(h => `<div class="heatmap-header">${h}</div>`).join('');
+
+            let startDay = firstDay.getDay() - 1;
+            if (startDay < 0) startDay = 6;
+            for (let i = 0; i < startDay; i++) {
+                grid += '<div class="heatmap-day empty"></div>';
+            }
+
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const date = new Date(year, month, d);
+                const key = getSimpleDateKey(date);
+                const count = dayCounts[key] || 0;
+
+                let cls = 'white';
+                if (date > today) {
+                    cls = 'future';
+                } else if (count >= 1) {
+                    cls = 'blue';
+                }
+
+                grid += `<div class="heatmap-day ${cls}">${d}</div>`;
+            }
+
+            return `
+                <div class="heatmap-container">
+                    <div class="heatmap-nav">
+                        <button data-dir="prev">&larr;</button>
+                        <span class="heatmap-month">${monthName}</span>
+                        <button data-dir="next">&rarr;</button>
+                    </div>
+                    <div class="heatmap-grid">${grid}</div>
+                    <div class="heatmap-legend">
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#fff;border:1px solid #e5e5ea"></span> Nicht geduscht
+                        </div>
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#3b82f6"></span> Geduscht
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDuscheStats() {
+            const duscheData = data.filter(d => d.button === '4');
+
+            const dayCounts = {};
+            duscheData.forEach(entry => {
+                const key = getAdjustedDateKey(entry.timestamp);
+                dayCounts[key] = (dayCounts[key] || 0) + 1;
+            });
+
+            const now = new Date();
+            const subTab = currentSubTab;
+            let startDate, periodLabel;
+
+            if (subTab === 'stats' || subTab === 'stats-week') {
+                startDate = new Date(now);
+                startDate.setDate(startDate.getDate() - 7);
+                periodLabel = 'Letzte 7 Tage';
+            } else {
+                startDate = new Date(now);
+                startDate.setDate(startDate.getDate() - 30);
+                periodLabel = 'Letzte 30 Tage';
+            }
+
+            let daysWithShower = 0;
+            let totalDays = 0;
+            const d = new Date(startDate);
+            d.setHours(0, 0, 0, 0);
+            const nowEnd = new Date(now);
+            nowEnd.setHours(23, 59, 59, 999);
+
+            while (d <= nowEnd) {
+                const key = getSimpleDateKey(d);
+                if (dayCounts[key] && dayCounts[key] >= 1) {
+                    daysWithShower++;
+                }
+                totalDays++;
+                d.setDate(d.getDate() + 1);
+            }
+
+            const percentage = totalDays > 0 ? Math.round((daysWithShower / totalDays) * 100) : 0;
+
+            return `
+                <div class="chart-title">Dusche Statistik</div>
+                <div class="sub-tabs" style="margin-bottom:15px">
+                    <button class="sub-tab ${subTab === 'stats' || subTab === 'stats-week' ? 'active' : ''}" data-sub="stats-week">Woche</button>
+                    <button class="sub-tab ${subTab === 'stats-month' ? 'active' : ''}" data-sub="stats-month">Monat</button>
+                </div>
+                <div class="pie-container">
+                    <div class="pie-wrapper">
+                        <svg class="pie-svg" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="80" fill="#e5e5ea"/>
+                            ${percentage > 0 ? `
+                                <path d="${describeArcPercent(percentage)}" fill="#3b82f6"/>
+                            ` : ''}
+                            <circle cx="100" cy="100" r="50" fill="#fff"/>
+                            <text x="100" y="95" text-anchor="middle" font-size="28" font-weight="bold" fill="#1d1d1f">${percentage}%</text>
+                            <text x="100" y="115" text-anchor="middle" font-size="11" fill="#86868b">geduscht</text>
+                        </svg>
+                    </div>
+                    <div class="pie-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background:#3b82f6"></span>
+                            Geduscht: ${daysWithShower} Tage
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background:#e5e5ea"></span>
+                            Nicht geduscht: ${totalDays - daysWithShower} Tage
+                        </div>
+                    </div>
+                    <div style="text-align:center;color:#86868b;font-size:0.8rem;margin-top:5px">${periodLabel}</div>
+                </div>
+            `;
+        }
+
+        function describeArcPercent(pct) {
+            const r = 80;
+            const cx = 100;
+            const cy = 100;
+            const angle = (pct / 100) * 360;
+
+            if (angle >= 360) {
+                return `M ${cx} ${cy-r} A ${r} ${r} 0 1 1 ${cx-0.01} ${cy-r} A ${r} ${r} 0 1 1 ${cx} ${cy-r} Z`;
+            }
+
+            const rad = ((angle - 90) * Math.PI) / 180;
+            const x = cx + r * Math.cos(rad);
+            const y = cy + r * Math.sin(rad);
+            const largeArc = angle > 180 ? 1 : 0;
+
+            return `M ${cx} ${cy} L ${cx} ${cy-r} A ${r} ${r} 0 ${largeArc} 1 ${x} ${y} Z`;
+        }
+
         function filterByTime(entries) {
             const now = Date.now();
             let cutoff = 0;
@@ -1452,7 +1756,9 @@
                 });
 
                 let label;
-                if (entry.button === '3') {
+                if (entry.button === '4') {
+                    label = 'Dusche';
+                } else if (entry.button === '3') {
                     label = 'Zapupa';
                 } else if (entry.color === 'green') {
                     label = 'Frei';
