@@ -257,6 +257,24 @@
             text-align: center;
         }
 
+        .bar {
+            cursor: pointer;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: #1d1d1f;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 1000;
+            pointer-events: none;
+            transform: translate(-50%, -100%);
+            margin-top: -8px;
+        }
+
         /* Heatmap */
         .heatmap-container {
             display: flex;
@@ -517,6 +535,19 @@
         let currentTab = 'freibesetzt';
         let currentSubTab = 'week';
         let heatmapMonth = new Date();
+        let backupTimer = null;
+
+        // Debounced auto-backup nach Eintrag
+        function scheduleAutoBackup() {
+            if (backupTimer) clearTimeout(backupTimer);
+            backupTimer = setTimeout(() => {
+                const token = localStorage.getItem('github-token');
+                const username = localStorage.getItem('tracker-username');
+                if (token && username) {
+                    backupToGitHub(true);
+                }
+            }, 2000);
+        }
 
         // Vibration nicht verfügbar auf iOS - Funktion entfernt
 
@@ -957,6 +988,9 @@
                                (currentTab === 'zapupa' || currentTab === 'dusche') ? 'heatmap' : 'week';
                 renderChart();
             }
+
+            // Auto-Backup nach 2 Sekunden
+            scheduleAutoBackup();
         }
 
         function flashButton(btn, color) {
@@ -1004,6 +1038,38 @@
                     renderChart();
                 });
             });
+
+            // Tooltips für Balken
+            area.querySelectorAll('.bar[data-label]').forEach(bar => {
+                bar.addEventListener('click', (e) => {
+                    showTooltip(e, bar.dataset.label);
+                });
+            });
+
+            // Tooltips für Heatmap-Tage
+            area.querySelectorAll('.heatmap-day:not(.empty):not(.future)').forEach(day => {
+                day.addEventListener('click', (e) => {
+                    const count = day.dataset.count || (day.classList.contains('zero') || day.classList.contains('white') ? '0' : '1+');
+                    showTooltip(e, `${count}x`);
+                });
+            });
+        }
+
+        let tooltipTimeout;
+        function showTooltip(e, text) {
+            // Entferne existierende Tooltips
+            document.querySelectorAll('.tooltip').forEach(t => t.remove());
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = text;
+            document.body.appendChild(tooltip);
+
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
+
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = setTimeout(() => tooltip.remove(), 1500);
         }
 
         function renderPieChartSection() {
@@ -1241,14 +1307,32 @@
             let values, labels;
 
             if (currentSubTab === 'days') {
+                // Nur diese Woche, bis heute
+                const now = new Date();
+                const todayDayOfWeek = now.getDay(); // 0 = Sonntag, 1 = Montag, ...
+                const todayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // 0 = Mo, 6 = So
+
+                // Start der Woche (Montag)
+                const startOfWeek = new Date(now);
+                const diff = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1;
+                startOfWeek.setDate(startOfWeek.getDate() - diff);
+                startOfWeek.setHours(0, 0, 0, 0);
+
                 const dayData = Array(7).fill(null).map(() => ({ yellow: 0, brown: 0 }));
                 filtered.forEach(entry => {
                     const d = getAdjustedDate(entry.timestamp);
-                    const day = d.getDay();
-                    dayData[day][entry.color]++;
+                    // Nur Einträge dieser Woche
+                    if (d >= startOfWeek && d <= now) {
+                        const day = d.getDay();
+                        dayData[day][entry.color]++;
+                    }
                 });
-                values = [...dayData.slice(1), dayData[0]];
-                labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+                // Nur Tage bis heute anzeigen
+                const allDays = [...dayData.slice(1), dayData[0]];
+                const allLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+                values = allDays.slice(0, todayIndex + 1);
+                labels = allLabels.slice(0, todayIndex + 1);
             } else if (currentSubTab === 'weeks') {
                 const weekData = {};
                 filtered.forEach(entry => {
@@ -1284,13 +1368,13 @@
 
             let bars = '';
             values.forEach((v, i) => {
-                const yH = (v.yellow / max) * 140;
-                const bH = (v.brown / max) * 140;
+                const yH = (v.yellow / max) * 150;
+                const bH = (v.brown / max) * 150;
                 bars += `
                     <div class="bar-group">
                         <div class="bar-pair">
-                            <div class="bar" style="background:${COLORS.yellow};height:${yH}px"></div>
-                            <div class="bar" style="background:${COLORS.brown};height:${bH}px"></div>
+                            <div class="bar" data-value="${v.yellow}" data-label="Vorne: ${v.yellow}" style="background:${COLORS.yellow};height:${yH}px"></div>
+                            <div class="bar" data-value="${v.brown}" data-label="Hinten: ${v.brown}" style="background:${COLORS.brown};height:${bH}px"></div>
                         </div>
                         <div class="bar-label">${labels[i]}</div>
                     </div>
@@ -1372,7 +1456,7 @@
                     cls = 'one';
                 }
 
-                grid += `<div class="heatmap-day ${cls}">${d}</div>`;
+                grid += `<div class="heatmap-day ${cls}" data-count="${count}">${d}</div>`;
             }
 
             return `
@@ -1598,7 +1682,7 @@
                     cls = 'blue';
                 }
 
-                grid += `<div class="heatmap-day ${cls}">${d}</div>`;
+                grid += `<div class="heatmap-day ${cls}" data-count="${count}">${d}</div>`;
             }
 
             return `
