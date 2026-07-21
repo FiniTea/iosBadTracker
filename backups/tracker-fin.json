@@ -1,7 +1,7 @@
 {
   "version": 1,
   "user": "fin",
-  "exportedAt": "2026-07-21T09:17:23.107Z",
+  "exportedAt": "2026-07-21T09:17:43.774Z",
   "entries": [
     {
       "timestamp": 1784479337140,
@@ -30,6 +30,36 @@
     },
     {
       "timestamp": 1784558341762,
+      "button": "2",
+      "color": "yellow"
+    },
+    {
+      "timestamp": 1784582907036,
+      "button": "1",
+      "color": "green"
+    },
+    {
+      "timestamp": 1784582907404,
+      "button": "2",
+      "color": "yellow"
+    },
+    {
+      "timestamp": 1784594000299,
+      "button": "1",
+      "color": "green"
+    },
+    {
+      "timestamp": 1784594001032,
+      "button": "2",
+      "color": "yellow"
+    },
+    {
+      "timestamp": 1784623195436,
+      "button": "1",
+      "color": "green"
+    },
+    {
+      "timestamp": 1784623195649,
       "button": "2",
       "color": "yellow"
     }
