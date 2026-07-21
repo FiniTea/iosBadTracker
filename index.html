@@ -206,6 +206,12 @@
             gap: 5px;
         }
 
+        .bar-chart-inner {
+            display: flex;
+            gap: 5px;
+            align-items: flex-end;
+        }
+
         .y-axis {
             display: flex;
             flex-direction: column;
@@ -215,6 +221,7 @@
             padding-right: 8px;
             font-size: 0.65rem;
             color: #86868b;
+            flex-shrink: 0;
         }
 
         .bar-chart {
@@ -248,6 +255,7 @@
             border-radius: 3px 3px 0 0;
             transition: height 0.3s;
             min-height: 2px;
+            cursor: pointer;
         }
 
         .bar-label {
@@ -257,8 +265,12 @@
             text-align: center;
         }
 
-        .bar {
-            cursor: pointer;
+        .bar-labels-row {
+            display: flex;
+            justify-content: space-around;
+            flex: 1;
+            padding-left: 8px;
+            margin-left: 30px;
         }
 
         .tooltip {
@@ -1363,41 +1375,51 @@
                 return '<div class="no-data">Keine Daten</div>';
             }
 
-            const max = Math.max(...values.map(v => Math.max(v.yellow, v.brown)), 1);
-            const yAxisLabels = [max, Math.round(max/2), 0];
+            // Berechne Summen aus den angezeigten Werten
+            const displayYellow = values.reduce((sum, v) => sum + v.yellow, 0);
+            const displayBrown = values.reduce((sum, v) => sum + v.brown, 0);
 
-            let bars = '';
+            const max = Math.max(...values.map(v => Math.max(v.yellow, v.brown)), 1);
+            const mid = Math.round(max / 2);
+            // Vermeide doppelte Werte in der Y-Achse
+            const yAxisLabels = mid === max || mid === 0 ? [max, '', 0] : [max, mid, 0];
+
+            let barsHtml = '';
+            let labelsHtml = '';
             values.forEach((v, i) => {
                 const yH = (v.yellow / max) * 150;
                 const bH = (v.brown / max) * 150;
-                bars += `
+                barsHtml += `
                     <div class="bar-group">
                         <div class="bar-pair">
-                            <div class="bar" data-value="${v.yellow}" data-label="Vorne: ${v.yellow}" style="background:${COLORS.yellow};height:${yH}px"></div>
-                            <div class="bar" data-value="${v.brown}" data-label="Hinten: ${v.brown}" style="background:${COLORS.brown};height:${bH}px"></div>
+                            <div class="bar" data-label="Vorne: ${v.yellow}" style="background:${COLORS.yellow};height:${yH}px"></div>
+                            <div class="bar" data-label="Hinten: ${v.brown}" style="background:${COLORS.brown};height:${bH}px"></div>
                         </div>
-                        <div class="bar-label">${labels[i]}</div>
                     </div>
                 `;
+                labelsHtml += `<div class="bar-label">${labels[i]}</div>`;
             });
 
             return `
                 <div class="bar-chart-wrapper">
-                    <div class="y-axis">
-                        <span>${yAxisLabels[0]}</span>
-                        <span>${yAxisLabels[1]}</span>
-                        <span>${yAxisLabels[2]}</span>
+                    <div class="bar-chart-inner">
+                        <div class="y-axis">
+                            <span>${yAxisLabels[0]}</span>
+                            <span>${yAxisLabels[1]}</span>
+                            <span>${yAxisLabels[2]}</span>
+                        </div>
+                        <div class="bar-chart">${barsHtml}</div>
                     </div>
-                    <div class="bar-chart">${bars}</div>
                 </div>
+                <div class="bar-labels-row">${labelsHtml}</div>
                 <div class="pie-legend" style="margin-top:15px">
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.yellow}"></span>
-                        Vorne: ${totalYellow}
+                        Vorne: ${displayYellow}
                     </div>
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.brown}"></span>
-                        Hinten: ${totalBrown}
+                        Hinten: ${displayBrown}
                     </div>
                 </div>
             `;
