@@ -203,13 +203,11 @@
         /* Bar Chart */
         .bar-chart-wrapper {
             display: flex;
-            gap: 5px;
+            flex-direction: column;
         }
 
         .bar-chart-inner {
             display: flex;
-            gap: 5px;
-            align-items: flex-end;
         }
 
         .y-axis {
@@ -222,13 +220,13 @@
             font-size: 0.65rem;
             color: #86868b;
             flex-shrink: 0;
+            min-width: 20px;
         }
 
         .bar-chart {
             display: flex;
             align-items: flex-end;
             justify-content: space-around;
-            height: 150px;
             flex: 1;
             gap: 4px;
             border-left: 1px solid #e5e5ea;
@@ -263,14 +261,6 @@
             color: #86868b;
             margin-top: 6px;
             text-align: center;
-        }
-
-        .bar-labels-row {
-            display: flex;
-            justify-content: space-around;
-            flex: 1;
-            padding-left: 8px;
-            margin-left: 30px;
         }
 
         .tooltip {
@@ -1319,32 +1309,16 @@
             let values, labels;
 
             if (currentSubTab === 'days') {
-                // Nur diese Woche, bis heute
-                const now = new Date();
-                const todayDayOfWeek = now.getDay(); // 0 = Sonntag, 1 = Montag, ...
-                const todayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // 0 = Mo, 6 = So
-
-                // Start der Woche (Montag)
-                const startOfWeek = new Date(now);
-                const diff = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1;
-                startOfWeek.setDate(startOfWeek.getDate() - diff);
-                startOfWeek.setHours(0, 0, 0, 0);
-
+                // Alle Tage (Mo-So), rollend über alle Zeit
                 const dayData = Array(7).fill(null).map(() => ({ yellow: 0, brown: 0 }));
                 filtered.forEach(entry => {
                     const d = getAdjustedDate(entry.timestamp);
-                    // Nur Einträge dieser Woche
-                    if (d >= startOfWeek && d <= now) {
-                        const day = d.getDay();
-                        dayData[day][entry.color]++;
-                    }
+                    const day = d.getDay();
+                    dayData[day][entry.color]++;
                 });
-
-                // Nur Tage bis heute anzeigen
-                const allDays = [...dayData.slice(1), dayData[0]];
-                const allLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-                values = allDays.slice(0, todayIndex + 1);
-                labels = allLabels.slice(0, todayIndex + 1);
+                // Umordnen: Mo-So statt So-Sa
+                values = [...dayData.slice(1), dayData[0]];
+                labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
             } else if (currentSubTab === 'weeks') {
                 const weekData = {};
                 filtered.forEach(entry => {
@@ -1375,29 +1349,24 @@
                 return '<div class="no-data">Keine Daten</div>';
             }
 
-            // Berechne Summen aus den angezeigten Werten
-            const displayYellow = values.reduce((sum, v) => sum + v.yellow, 0);
-            const displayBrown = values.reduce((sum, v) => sum + v.brown, 0);
-
             const max = Math.max(...values.map(v => Math.max(v.yellow, v.brown)), 1);
             const mid = Math.round(max / 2);
             // Vermeide doppelte Werte in der Y-Achse
             const yAxisLabels = mid === max || mid === 0 ? [max, '', 0] : [max, mid, 0];
 
-            let barsHtml = '';
-            let labelsHtml = '';
+            let bars = '';
             values.forEach((v, i) => {
                 const yH = (v.yellow / max) * 150;
                 const bH = (v.brown / max) * 150;
-                barsHtml += `
+                bars += `
                     <div class="bar-group">
                         <div class="bar-pair">
                             <div class="bar" data-label="Vorne: ${v.yellow}" style="background:${COLORS.yellow};height:${yH}px"></div>
                             <div class="bar" data-label="Hinten: ${v.brown}" style="background:${COLORS.brown};height:${bH}px"></div>
                         </div>
+                        <div class="bar-label">${labels[i]}</div>
                     </div>
                 `;
-                labelsHtml += `<div class="bar-label">${labels[i]}</div>`;
             });
 
             return `
@@ -1408,18 +1377,17 @@
                             <span>${yAxisLabels[1]}</span>
                             <span>${yAxisLabels[2]}</span>
                         </div>
-                        <div class="bar-chart">${barsHtml}</div>
+                        <div class="bar-chart">${bars}</div>
                     </div>
                 </div>
-                <div class="bar-labels-row">${labelsHtml}</div>
                 <div class="pie-legend" style="margin-top:15px">
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.yellow}"></span>
-                        Vorne: ${displayYellow}
+                        Vorne: ${totalYellow}
                     </div>
                     <div class="legend-item">
                         <span class="legend-dot" style="background:${COLORS.brown}"></span>
-                        Hinten: ${displayBrown}
+                        Hinten: ${totalBrown}
                     </div>
                 </div>
             `;
