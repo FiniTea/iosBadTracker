@@ -93,6 +93,7 @@
         .btn.flash-yellow { background: #eab308; color: #fff; }
         .btn.flash-brown { background: #92400e; color: #fff; }
         .btn.flash-blue { background: #3b82f6; color: #fff; }
+        .btn.flash-purple { background: #a855f7; color: #fff; }
         .btn.flash-delete { background: #94a3b8; color: #fff; }
 
         .main-tabs {
@@ -338,6 +339,10 @@
         .heatmap-day.future { background: #f3f4f6; color: #9ca3af; }
         .heatmap-day.white { background: #fff; border: 1px solid #e5e5ea; color: #1d1d1f; }
         .heatmap-day.blue { background: #3b82f6; color: #fff; }
+        .heatmap-day.purple1 { background: #e9d5ff; color: #581c87; }
+        .heatmap-day.purple2 { background: #c084fc; color: #fff; }
+        .heatmap-day.purple3 { background: #a855f7; color: #fff; }
+        .heatmap-day.purple4 { background: #7c3aed; color: #fff; }
 
         .heatmap-legend {
             display: flex;
@@ -494,6 +499,11 @@
                 <div class="hint">1x = Eintrag | 3x = Löschen</div>
                 <span class="cooldown"></span>
             </button>
+            <button class="btn" id="btn5" data-button="5">
+                Felix
+                <div class="hint">1x = Eintrag | 3x = Löschen</div>
+                <span class="cooldown"></span>
+            </button>
         </div>
 
         <div class="main-tabs">
@@ -501,6 +511,7 @@
             <button class="main-tab" data-tab="vornehinten">Vorne/Hinten</button>
             <button class="main-tab" data-tab="zapupa">Zapupa</button>
             <button class="main-tab" data-tab="dusche">Dusche</button>
+            <button class="main-tab" data-tab="felix">Felix</button>
         </div>
 
         <div id="chart-area"></div>
@@ -531,7 +542,8 @@
             red: '#ef4444',
             yellow: '#eab308',
             brown: '#92400e',
-            blue: '#3b82f6'
+            blue: '#3b82f6',
+            purple: '#a855f7'
         };
 
         let data = JSON.parse(localStorage.getItem('tracker-data') || '[]');
@@ -594,7 +606,7 @@
                 tab.classList.add('active');
                 currentTab = tab.dataset.tab;
                 currentSubTab = currentTab === 'vornehinten' ? 'days' :
-                               (currentTab === 'zapupa' || currentTab === 'dusche') ? 'heatmap' : 'week';
+                               (currentTab === 'zapupa' || currentTab === 'dusche' || currentTab === 'felix') ? 'heatmap' : 'week';
                 renderChart();
             });
         });
@@ -936,7 +948,7 @@
                 } else if (isInCooldown) {
                     // Während Cooldown keine neuen Einträge
                     return;
-                } else if (count === 2 && buttonId !== '3' && buttonId !== '4') {
+                } else if (count === 2 && buttonId !== '3' && buttonId !== '4' && buttonId !== '5') {
                     recordEntry(buttonId, 'double');
                 } else if (count >= 1) {
                     recordEntry(buttonId, 'single');
@@ -968,6 +980,8 @@
                 color = tapType === 'single' ? 'yellow' : 'brown';
             } else if (buttonId === '4') {
                 color = 'blue';
+            } else if (buttonId === '5') {
+                color = 'purple';
             } else {
                 color = 'green';
             }
@@ -983,7 +997,7 @@
             updateCooldowns();
 
             // Wechsle zur entsprechenden Statistik (ohne Scrollen)
-            const tabMap = { '1': 'freibesetzt', '2': 'vornehinten', '3': 'zapupa', '4': 'dusche' };
+            const tabMap = { '1': 'freibesetzt', '2': 'vornehinten', '3': 'zapupa', '4': 'dusche', '5': 'felix' };
             const targetTab = tabMap[buttonId];
             if (targetTab && currentTab !== targetTab) {
                 document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
@@ -991,7 +1005,7 @@
                 if (tabBtn) tabBtn.classList.add('active');
                 currentTab = targetTab;
                 currentSubTab = (currentTab === 'vornehinten') ? 'days' :
-                               (currentTab === 'zapupa' || currentTab === 'dusche') ? 'heatmap' : 'week';
+                               (currentTab === 'zapupa' || currentTab === 'dusche' || currentTab === 'felix') ? 'heatmap' : 'week';
                 renderChart();
             }
 
@@ -1022,6 +1036,8 @@
                 area.innerHTML = renderBarChartSection();
             } else if (currentTab === 'dusche') {
                 area.innerHTML = renderDuscheSection();
+            } else if (currentTab === 'felix') {
+                area.innerHTML = renderFelixSection();
             } else {
                 area.innerHTML = renderZapupaSection();
             }
@@ -1791,6 +1807,168 @@
             return `M ${cx} ${cy} L ${cx} ${cy-r} A ${r} ${r} 0 ${largeArc} 1 ${x} ${y} Z`;
         }
 
+        function renderFelixSection() {
+            return `
+                <div class="sub-tabs">
+                    <button class="sub-tab ${currentSubTab === 'heatmap' ? 'active' : ''}" data-sub="heatmap">Heatmap</button>
+                    <button class="sub-tab ${currentSubTab === 'stats' || currentSubTab === 'stats-week' || currentSubTab === 'stats-month' ? 'active' : ''}" data-sub="stats">Statistik</button>
+                </div>
+                <div class="chart-container">
+                    ${currentSubTab.startsWith('stats') ? renderFelixStats() : renderFelixHeatmap()}
+                </div>
+            `;
+        }
+
+        function renderFelixHeatmap() {
+            const year = heatmapMonth.getFullYear();
+            const month = heatmapMonth.getMonth();
+            const monthName = heatmapMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            const felixData = data.filter(d => d.button === '5');
+            const dayCounts = {};
+            felixData.forEach(entry => {
+                const key = getAdjustedDateKey(entry.timestamp);
+                dayCounts[key] = (dayCounts[key] || 0) + 1;
+            });
+
+            const headers = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+            let grid = headers.map(h => `<div class="heatmap-header">${h}</div>`).join('');
+
+            let startDay = firstDay.getDay() - 1;
+            if (startDay < 0) startDay = 6;
+            for (let i = 0; i < startDay; i++) {
+                grid += '<div class="heatmap-day empty"></div>';
+            }
+
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const date = new Date(year, month, d);
+                const key = getSimpleDateKey(date);
+                const count = dayCounts[key] || 0;
+
+                let cls = 'white';
+                if (date > today) {
+                    cls = 'future';
+                } else if (count >= 4) {
+                    cls = 'purple4';
+                } else if (count === 3) {
+                    cls = 'purple3';
+                } else if (count === 2) {
+                    cls = 'purple2';
+                } else if (count === 1) {
+                    cls = 'purple1';
+                }
+
+                grid += `<div class="heatmap-day ${cls}" data-count="${count}">${d}</div>`;
+            }
+
+            return `
+                <div class="heatmap-container">
+                    <div class="heatmap-nav">
+                        <button data-dir="prev">&larr;</button>
+                        <span class="heatmap-month">${monthName}</span>
+                        <button data-dir="next">&rarr;</button>
+                    </div>
+                    <div class="heatmap-grid">${grid}</div>
+                    <div class="heatmap-legend">
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#fff;border:1px solid #e5e5ea"></span> 0
+                        </div>
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#e9d5ff"></span> 1
+                        </div>
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#c084fc"></span> 2
+                        </div>
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#a855f7"></span> 3
+                        </div>
+                        <div class="heatmap-legend-item">
+                            <span class="heatmap-legend-box" style="background:#7c3aed"></span> 4+
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFelixStats() {
+            const felixData = data.filter(d => d.button === '5');
+
+            const dayCounts = {};
+            felixData.forEach(entry => {
+                const key = getAdjustedDateKey(entry.timestamp);
+                dayCounts[key] = (dayCounts[key] || 0) + 1;
+            });
+
+            const now = new Date();
+            const subTab = currentSubTab;
+            let startDate, periodLabel;
+
+            if (subTab === 'stats' || subTab === 'stats-week') {
+                startDate = new Date(now);
+                startDate.setDate(startDate.getDate() - 7);
+                periodLabel = 'Letzte 7 Tage';
+            } else {
+                startDate = new Date(now);
+                startDate.setDate(startDate.getDate() - 30);
+                periodLabel = 'Letzte 30 Tage';
+            }
+
+            let daysWithFelix = 0;
+            let totalDays = 0;
+            const d = new Date(startDate);
+            d.setHours(0, 0, 0, 0);
+            const nowEnd = new Date(now);
+            nowEnd.setHours(23, 59, 59, 999);
+
+            while (d <= nowEnd) {
+                const key = getSimpleDateKey(d);
+                if (dayCounts[key] && dayCounts[key] >= 1) {
+                    daysWithFelix++;
+                }
+                totalDays++;
+                d.setDate(d.getDate() + 1);
+            }
+
+            const percentage = totalDays > 0 ? Math.round((daysWithFelix / totalDays) * 100) : 0;
+
+            return `
+                <div class="chart-title">Felix Statistik</div>
+                <div class="sub-tabs" style="margin-bottom:15px">
+                    <button class="sub-tab ${subTab === 'stats' || subTab === 'stats-week' ? 'active' : ''}" data-sub="stats-week">Woche</button>
+                    <button class="sub-tab ${subTab === 'stats-month' ? 'active' : ''}" data-sub="stats-month">Monat</button>
+                </div>
+                <div class="pie-container">
+                    <div class="pie-wrapper">
+                        <svg class="pie-svg" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="80" fill="#e5e5ea"/>
+                            ${percentage > 0 ? `
+                                <path d="${describeArcPercent(percentage)}" fill="#a855f7"/>
+                            ` : ''}
+                            <circle cx="100" cy="100" r="50" fill="#fff"/>
+                            <text x="100" y="95" text-anchor="middle" font-size="28" font-weight="bold" fill="#1d1d1f">${percentage}%</text>
+                            <text x="100" y="115" text-anchor="middle" font-size="11" fill="#86868b">der Tage</text>
+                        </svg>
+                    </div>
+                    <div class="pie-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background:#a855f7"></span>
+                            Mit Felix: ${daysWithFelix} Tage
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background:#e5e5ea"></span>
+                            Ohne Felix: ${totalDays - daysWithFelix} Tage
+                        </div>
+                    </div>
+                    <div style="text-align:center;color:#86868b;font-size:0.8rem;margin-top:5px">${periodLabel}</div>
+                </div>
+            `;
+        }
+
         function filterByTime(entries) {
             const now = Date.now();
             let cutoff = 0;
@@ -1832,7 +2010,9 @@
                 });
 
                 let label;
-                if (entry.button === '4') {
+                if (entry.button === '5') {
+                    label = 'Felix';
+                } else if (entry.button === '4') {
                     label = 'Dusche';
                 } else if (entry.button === '3') {
                     label = 'Zapupa';
